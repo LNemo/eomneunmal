@@ -1,0 +1,12 @@
+[package]
+name = "eomneunmal"
+version = "0.1.0"
+edition = "2021"
+description = "Core privacy and critique pipeline for 없는말"
+license = "UNLICENSED"
+
+[lib]
+name = "eomneunmal"
+path = "src/lib.rs"
+
+[dependencies]
