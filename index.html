@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>없는말</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="hero">
+        <p class="eyebrow">Korean post-send grammar roast companion</p>
+        <h1>없는말</h1>
+        <p>카카오톡/디스코드 전송 직후 맞춤법 지적 캐릭터가 나타납니다.</p>
+        <strong class="warning">욕설 포함 주의: 강한 비꼼 모드는 직접 모욕을 표시할 수 있습니다.</strong>
+      </section>
+
+      <section class="settings" aria-labelledby="settings-heading">
+        <h2 id="settings-heading">MVP 설정</h2>
+        <label>맞춤법 강도
+          <select id="spellingStrength">
+            <option value="weak">약함</option>
+            <option value="medium" selected>보통</option>
+            <option value="strong">강함</option>
+          </select>
+        </label>
+        <label>비꼼 강도
+          <select id="sarcasmStrength">
+            <option value="weak" selected>약함</option>
+            <option value="medium">보통</option>
+            <option value="strong">강함</option>
+          </select>
+        </label>
+        <label>제공자
+          <select id="provider">
+            <option value="mock" selected>Mock</option>
+            <option value="official-api-key">공식 API 키</option>
+            <option value="experimental-byo-oauth">실험적 BYO OAuth</option>
+          </select>
+        </label>
+        <label><input id="discordEnabled" type="checkbox" checked /> Discord 감지</label>
+        <label><input id="kakaoEnabled" type="checkbox" checked /> KakaoTalk 감지</label>
+        <label><input id="failClosed" type="checkbox" checked /> 알 수 없는 입력은 제외</label>
+        <label><input id="redactDiagnostics" type="checkbox" checked /> 진단 정보 redaction</label>
+        <label><input id="byoOptIn" type="checkbox" /> 실험적 BYO OAuth 직접 옵트인</label>
+        <output id="settingsStatus">기본 설정은 privacy-preserving 상태입니다.</output>
+      </section>
+
+      <section class="overlay-preview" aria-labelledby="overlay-heading">
+        <h2 id="overlay-heading">오버레이 미리보기</h2>
+        <button id="simulateSend">전송 감지 시뮬레이션</button>
+        <article id="overlay" class="overlay idle" aria-live="polite">
+          <span class="character">없</span>
+          <div>
+            <strong id="overlayTitle">대기 중</strong>
+            <p id="overlayBody">전송 이벤트를 기다립니다.</p>
+          </div>
+        </article>
+      </section>
+    </main>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

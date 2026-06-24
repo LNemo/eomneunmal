@@ -1,0 +1,12 @@
+{
+  "identifier": "default",
+  "description": "없는말 WebView는 설정/오버레이 UI만 담당하며 global input, secret, raw capture 권한은 Rust/native 경계 밖으로 노출하지 않는다.",
+  "windows": ["main", "overlay"],
+  "permissions": [
+    "core:default",
+    "core:window:allow-show",
+    "core:window:allow-hide",
+    "core:window:allow-set-focus",
+    "core:window:allow-set-always-on-top"
+  ]
+}
