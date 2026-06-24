@@ -19,14 +19,14 @@ impl Default for WindowsProbeDesign {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct WindowsProbe {
     pub design: WindowsProbeDesign,
     pub current_host: bool,
 }
 
-impl Default for WindowsProbe {
-    fn default() -> Self {
+impl WindowsProbe {
+    pub fn for_current_host() -> Self {
         Self {
             design: WindowsProbeDesign::default(),
             current_host: cfg!(target_os = "windows"),
@@ -77,7 +77,7 @@ impl AdapterProbe for WindowsProbe {
 }
 
 pub fn planned_windows_rows() -> Vec<ProbeRow> {
-    WindowsProbe::default().probe_rows()
+    WindowsProbe::for_current_host().probe_rows()
 }
 
 #[cfg(test)]

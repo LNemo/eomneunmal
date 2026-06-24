@@ -35,7 +35,7 @@ OpenCode류 도구에서 볼 수 있는 “사용자 계정 기반 인증 흐름
 
 | Secret | Namespace 예시 | 노출 대상 |
 |---|---|---|
-| Official API key | `eomneunmal.provider.openai.api_key` | Rust provider layer only |
+| Official API key | `eomneunmal.provider.official.api_key` | Rust provider layer only |
 | BYO OAuth access token | `eomneunmal.provider.experimental.oauth.access` | Rust provider layer only |
 | BYO OAuth refresh token | `eomneunmal.provider.experimental.oauth.refresh` | Rust provider layer only |
 

@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt;
 
 use super::prompt::PromptBuilder;
 use super::types::{CritiqueRequest, CritiqueResult};
@@ -15,9 +16,18 @@ pub trait SecretStore {
     fn get_secret(&self, namespace: &str) -> Option<String>;
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Clone, Default)]
 pub struct InMemorySecretStore {
     values: HashMap<String, String>,
+}
+
+impl fmt::Debug for InMemorySecretStore {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("InMemorySecretStore")
+            .field("secret_count", &self.values.len())
+            .field("values", &"<redacted>")
+            .finish()
+    }
 }
 
 impl InMemorySecretStore {
@@ -58,11 +68,20 @@ impl CritiqueProvider for MockProvider {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct OfficialApiKeyProvider<S> {
     secret_store: S,
     secret_namespace: String,
     prompt_builder: PromptBuilder,
+}
+
+impl<S> fmt::Debug for OfficialApiKeyProvider<S> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("OfficialApiKeyProvider")
+            .field("secret_store", &"<redacted>")
+            .field("secret_namespace", &self.secret_namespace)
+            .finish_non_exhaustive()
+    }
 }
 
 impl<S: SecretStore> OfficialApiKeyProvider<S> {
@@ -74,14 +93,14 @@ impl<S: SecretStore> OfficialApiKeyProvider<S> {
         }
     }
 
-    pub fn authorization_header(&self) -> Result<String, ProviderError> {
+    pub fn authorization_header(&self) -> Result<AuthorizationHeader, ProviderError> {
         let secret = self
             .secret_store
             .get_secret(&self.secret_namespace)
             .ok_or_else(|| ProviderError::MissingSecret {
                 namespace: self.secret_namespace.clone(),
             })?;
-        Ok(format!("Bearer {secret}"))
+        Ok(AuthorizationHeader(format!("Bearer {secret}")))
     }
 
     pub fn request_blueprint(
@@ -90,7 +109,7 @@ impl<S: SecretStore> OfficialApiKeyProvider<S> {
     ) -> Result<ProviderRequestBlueprint, ProviderError> {
         Ok(ProviderRequestBlueprint {
             authorization_header: self.authorization_header()?,
-            prompt: self.prompt_builder.build(request),
+            prompt: PromptPayload(self.prompt_builder.build(request)),
             locale: request.locale,
         })
     }
@@ -106,18 +125,68 @@ impl<S: SecretStore> CritiqueProvider for OfficialApiKeyProvider<S> {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
+pub struct AuthorizationHeader(String);
+
+impl AuthorizationHeader {
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl fmt::Debug for AuthorizationHeader {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("AuthorizationHeader(<redacted>)")
+    }
+}
+
+#[derive(Clone, PartialEq, Eq)]
+pub struct PromptPayload(String);
+
+impl PromptPayload {
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl fmt::Debug for PromptPayload {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("PromptPayload(<redacted>)")
+    }
+}
+
+#[derive(Clone, PartialEq, Eq)]
 pub struct ProviderRequestBlueprint {
-    pub authorization_header: String,
-    pub prompt: String,
+    pub authorization_header: AuthorizationHeader,
+    pub prompt: PromptPayload,
     pub locale: &'static str,
 }
 
-#[derive(Debug, Clone)]
+impl fmt::Debug for ProviderRequestBlueprint {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ProviderRequestBlueprint")
+            .field("authorization_header", &self.authorization_header)
+            .field("prompt", &self.prompt)
+            .field("locale", &self.locale)
+            .finish()
+    }
+}
+
+#[derive(Clone)]
 pub struct ExperimentalByoOAuthConnector<S> {
     secret_store: S,
     enabled: bool,
     access_namespace: String,
+}
+
+impl<S> fmt::Debug for ExperimentalByoOAuthConnector<S> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ExperimentalByoOAuthConnector")
+            .field("secret_store", &"<redacted>")
+            .field("enabled", &self.enabled)
+            .field("access_namespace", &self.access_namespace)
+            .finish()
+    }
 }
 
 impl<S: SecretStore> ExperimentalByoOAuthConnector<S> {
@@ -164,7 +233,7 @@ mod tests {
         let store = InMemorySecretStore::default().with_secret("api", "test-secret");
         let provider = OfficialApiKeyProvider::new(store, "api");
         assert_eq!(
-            provider.authorization_header().unwrap(),
+            provider.authorization_header().unwrap().as_str(),
             "Bearer test-secret"
         );
     }
@@ -176,9 +245,14 @@ mod tests {
         let request =
             CritiqueRequest::new("되요", SpellingStrength::Strong, SarcasmStrength::Strong);
         let blueprint = provider.request_blueprint(&request).unwrap();
-        assert!(blueprint.authorization_header.contains("test-secret"));
-        assert!(!blueprint.prompt.contains("test-secret"));
-        assert!(blueprint.prompt.contains("되요"));
+        assert!(blueprint
+            .authorization_header
+            .as_str()
+            .contains("test-secret"));
+        assert!(!format!("{:?}", blueprint).contains("test-secret"));
+        assert!(!blueprint.prompt.as_str().contains("test-secret"));
+        assert!(blueprint.prompt.as_str().contains("되요"));
+        assert!(!format!("{:?}", blueprint).contains("되요"));
     }
 
     #[test]

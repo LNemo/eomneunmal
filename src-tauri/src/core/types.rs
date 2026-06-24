@@ -34,12 +34,25 @@ impl SarcasmStrength {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+use std::fmt;
+
+#[derive(Clone, PartialEq, Eq)]
 pub struct CritiqueRequest {
     pub message: String,
     pub spelling_strength: SpellingStrength,
     pub sarcasm_strength: SarcasmStrength,
     pub locale: &'static str,
+}
+
+impl fmt::Debug for CritiqueRequest {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("CritiqueRequest")
+            .field("message", &"<redacted>")
+            .field("spelling_strength", &self.spelling_strength)
+            .field("sarcasm_strength", &self.sarcasm_strength)
+            .field("locale", &self.locale)
+            .finish()
+    }
 }
 
 impl CritiqueRequest {
@@ -57,11 +70,21 @@ impl CritiqueRequest {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct CritiqueResult {
     pub corrected: String,
     pub explanation: String,
     pub roast: String,
+}
+
+impl fmt::Debug for CritiqueResult {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("CritiqueResult")
+            .field("corrected", &"<redacted>")
+            .field("explanation", &"<redacted>")
+            .field("roast", &"<redacted>")
+            .finish()
+    }
 }
 
 impl CritiqueResult {

@@ -1,3 +1,4 @@
+use std::fmt;
 use std::time::{Duration, Instant};
 
 use super::candidate::CandidateBuffer;
@@ -10,7 +11,6 @@ use super::types::{CritiqueResult, SarcasmStrength, SpellingStrength};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SupportClaim {
     HarnessOnly,
-    LiveAdapterPass,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -28,14 +28,25 @@ pub enum HarnessOutcome {
     ProviderFailed,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct HarnessScenario {
     pub app_id: String,
     pub message: String,
     pub metadata: ElementMetadata,
     pub spelling_strength: SpellingStrength,
     pub sarcasm_strength: SarcasmStrength,
-    pub live_adapter_pass: bool,
+}
+
+impl fmt::Debug for HarnessScenario {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("HarnessScenario")
+            .field("app_id", &self.app_id)
+            .field("message", &"<redacted>")
+            .field("metadata", &self.metadata)
+            .field("spelling_strength", &self.spelling_strength)
+            .field("sarcasm_strength", &self.sarcasm_strength)
+            .finish()
+    }
 }
 
 impl HarnessScenario {
@@ -46,16 +57,11 @@ impl HarnessScenario {
             metadata: ElementMetadata::chat_input("discord", "Message #없는말-test"),
             spelling_strength: SpellingStrength::Medium,
             sarcasm_strength: SarcasmStrength::Weak,
-            live_adapter_pass: false,
         }
     }
 
     pub fn support_claim(&self) -> SupportClaim {
-        if self.live_adapter_pass {
-            SupportClaim::LiveAdapterPass
-        } else {
-            SupportClaim::HarnessOnly
-        }
+        SupportClaim::HarnessOnly
     }
 }
 

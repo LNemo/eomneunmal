@@ -9,7 +9,7 @@ fn main() {
     if cfg!(target_os = "macos") {
         rows.extend(run_macos_inventory_probe());
     }
-    rows.extend(WindowsProbe::default().probe_rows());
+    rows.extend(WindowsProbe::for_current_host().probe_rows());
     for row in rows {
         println!("{}", row.markdown_row());
     }

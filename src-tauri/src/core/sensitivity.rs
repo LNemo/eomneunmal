@@ -96,9 +96,25 @@ impl Default for SensitiveClassifier {
                 "인증번호",
                 "주민",
                 "계좌",
+                "account",
                 "account number",
+                "email",
+                "e-mail",
+                "이메일",
+                "mail address",
+                "phone",
+                "telephone",
+                "mobile",
+                "휴대폰",
+                "전화번호",
+                "login",
                 "login id",
                 "로그인 id",
+                "로그인",
+                "username",
+                "user name",
+                "사용자명",
+                "계정",
                 "아이디",
             ],
             chat_app_terms: vec![
@@ -169,6 +185,12 @@ impl SensitiveClassifier {
     }
 
     fn looks_like_allowed_chat(&self, meta: &ElementMetadata, haystack: &str) -> bool {
+        let explicit_safe_field =
+            meta.is_password == Some(false) && meta.is_protected == Some(false);
+        if !explicit_safe_field {
+            return false;
+        }
+
         let app_matches = meta
             .app_id
             .as_deref()
@@ -198,7 +220,27 @@ impl SensitiveClassifier {
                 || value.contains("입력")
         });
 
-        app_matches && editable
+        // Do not treat every editable field inside Discord/KakaoTalk as a chat
+        // message field. Login/account/profile fields can be editable too, so
+        // the allow path requires explicit message/chat context.
+        let message_context = [
+            meta.window_title.as_deref(),
+            meta.label.as_deref(),
+            meta.placeholder.as_deref(),
+            meta.role.as_deref(),
+            meta.control_type.as_deref(),
+        ]
+        .into_iter()
+        .flatten()
+        .map(str::to_lowercase)
+        .any(|value| {
+            value.contains("message")
+                || value.contains("메시지")
+                || value.contains("chat")
+                || value.contains("채팅")
+        });
+
+        app_matches && editable && message_context
     }
 }
 
@@ -238,6 +280,59 @@ mod tests {
         let classifier = SensitiveClassifier::default();
         let meta = ElementMetadata::chat_input("com.discordapp.Discord", "Message #general");
         assert_eq!(classifier.classify(&meta).action, SensitivityAction::Allow);
+    }
+
+    #[test]
+    fn chat_input_requires_explicit_safe_os_flags() {
+        let classifier = SensitiveClassifier::default();
+        let meta = ElementMetadata {
+            is_password: None,
+            is_protected: None,
+            ..ElementMetadata::chat_input("com.discordapp.Discord", "Message #general")
+        };
+        assert_ne!(classifier.classify(&meta).action, SensitivityAction::Allow);
+    }
+
+    #[test]
+    fn discord_login_or_account_fields_exclude_even_inside_known_app() {
+        let classifier = SensitiveClassifier::default();
+        for label in [
+            "Email",
+            "Phone number",
+            "Account ID",
+            "로그인 아이디",
+            "계정 이메일",
+        ] {
+            let meta = ElementMetadata {
+                app_id: Some("com.discordapp.Discord".to_owned()),
+                role: Some("text_input".to_owned()),
+                control_type: Some("edit".to_owned()),
+                label: Some(label.to_owned()),
+                is_password: Some(false),
+                is_protected: Some(false),
+                ..ElementMetadata::default()
+            };
+            assert_eq!(
+                classifier.classify(&meta).action,
+                SensitivityAction::Exclude,
+                "{label} should be excluded"
+            );
+        }
+    }
+
+    #[test]
+    fn kakao_profile_edit_field_without_message_context_is_not_allowed() {
+        let classifier = SensitiveClassifier::default();
+        let meta = ElementMetadata {
+            app_id: Some("com.kakao.KakaoTalkMac".to_owned()),
+            role: Some("text_input".to_owned()),
+            control_type: Some("edit".to_owned()),
+            label: Some("프로필 상태 입력".to_owned()),
+            is_password: Some(false),
+            is_protected: Some(false),
+            ..ElementMetadata::default()
+        };
+        assert_ne!(classifier.classify(&meta).action, SensitivityAction::Allow);
     }
 
     #[test]
