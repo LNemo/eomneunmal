@@ -2,6 +2,7 @@
 
 pub mod candidate;
 pub mod diagnostics;
+pub mod harness;
 pub mod overlay;
 pub mod pipeline;
 pub mod prompt;
@@ -13,6 +14,7 @@ pub mod types;
 
 pub use candidate::{CandidateBuffer, CandidateSnapshot, ClearReason};
 pub use diagnostics::{DiagnosticEvent, Redacted};
+pub use harness::{run_post_send_harness, HarnessOutcome, HarnessScenario, SupportClaim};
 pub use overlay::{OverlayPhase, OverlayStateMachine, OVERLAY_RENDER_TARGET};
 pub use pipeline::{CritiquePipeline, PipelineOutcome, PostSendEvent};
 pub use prompt::PromptBuilder;

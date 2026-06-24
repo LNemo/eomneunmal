@@ -62,6 +62,11 @@
 
 자세한 설계는 [`docs/provider-auth.md`](docs/provider-auth.md)를 참고하세요.
 
+
+## 현재 호환성 상태
+
+2026-06-24 기준 이 저장소는 실제 카카오톡/디스코드 전송 직후 지원을 `pass`로 주장하지 않습니다. 현재 결과는 macOS 앱 설치/접근성 inventory와 harness/demo 통합까지이며, 안전한 테스트 채널에서 수동 검증 후 [`docs/compatibility-matrix.md`](docs/compatibility-matrix.md)를 갱신해야 합니다.
+
 ## 개발 상태
 
 현재 저장소는 MVP 구현 전 문서/계획 기반 스캐폴드 단계입니다.
