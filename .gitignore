@@ -1,0 +1,42 @@
+# OS/editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Node/Tauri frontend
+node_modules/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Rust/Tauri
+/target/
+src-tauri/target/
+Cargo.lock.orig
+
+# Secrets and local config
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.token
+secrets.*
+credentials.*
+
+# Diagnostics must be redacted before sharing
+diagnostics/
+*.log
+crash-reports/
+
+# OMX runtime/session state; durable plans/specs may be copied into public docs deliberately.
+.omx/logs/
+.omx/state/
+.omx/metrics.json
+.omx/hud-config.json
+.omx/setup-scope.json
