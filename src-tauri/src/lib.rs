@@ -4,3 +4,5 @@
 //! Rust/native boundaries rather than the WebView.
 
 pub mod core;
+
+pub mod platform;
