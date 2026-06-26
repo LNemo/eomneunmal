@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>없는말 지적</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body class="overlay-body">
+    <article id="overlay" class="overlay idle overlay-window" aria-live="polite">
+      <span class="character">없</span>
+      <div>
+        <strong id="overlayTitle">대기 중</strong>
+        <p id="overlayBody">전송 이벤트를 기다립니다.</p>
+      </div>
+    </article>
+    <script type="module" src="/src/overlay-window.js"></script>
+  </body>
+</html>

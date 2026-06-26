@@ -12,12 +12,15 @@
 | `blocked` | OS/app/test-environment 제약으로 현재 접근 불가 |
 | `disabled` | 민감 입력 fail-closed 미충족으로 비활성화 |
 
-## 2026-06-24 로컬 스파이크 결과
+## 2026-06-25 로컬 스파이크 결과
 
 Evidence command:
 
 ```sh
-cd src-tauri && cargo run --bin probe_matrix > ../.omx/ultragoal/probe-matrix-20260624.md
+(cd src-tauri && cargo run --bin probe_matrix > ../.omx/ultragoal/probe-matrix-20260625.md)
+(cd src-tauri && cargo test)
+npm test
+npm run build
 ```
 
 Current host:
@@ -37,16 +40,31 @@ Current host:
 | Windows | Discord | not-current-host / TBD on Windows host | not-current-host | Korean IME | WH_KEYBOARD_LL via SetWindowsHookEx | UI Automation TextPattern/ValuePattern with UI Automation IsPassword property exclusion | contract specified; live Windows secure-field probe pending | blocked | blocked in this session: current host is not Windows |
 | Windows | KakaoTalk | not-current-host / TBD on Windows host | not-current-host | Korean IME | WH_KEYBOARD_LL via SetWindowsHookEx | UI Automation TextPattern/ValuePattern with UI Automation IsPassword property exclusion | contract specified; live Windows secure-field probe pending | blocked | blocked in this session: current host is not Windows |
 
+### Simulated adapter integration evidence
+
+이 항목은 실제 Discord 메시지를 보내지 않은 로컬 proof입니다. public support `pass`로 승격하지 않습니다.
+
+| Field | Evidence |
+|---|---|
+| Adapter | macOS Discord `LivePostSendAdapter` contract |
+| Send signal | synthetic/Enter-like event abstraction |
+| Candidate source | in-memory fallback candidate, debug redacted |
+| Pipeline | adapter decision → `CritiquePipeline<SpyProvider/MockProvider>` → `OverlayController` |
+| Provider privacy | provider request contains candidate message only; app/window/channel metadata and secrets are not included |
+| Sensitive fail-closed | protected Discord-like field returns excluded; provider and overlay are not called |
+| Support claim | `SimulatedAdapterOnly`, not `pass` |
+| Test evidence | `cargo test` includes simulated Discord adapter integration and provider-spy privacy tests |
+
 ## Formal MVP Go/No-Go 기록
 
 - Decision: `narrow`
-- Date: 2026-06-24
-- Rationale: Discord/KakaoTalk are installed on the macOS host and Accessibility is observable as enabled, but Input Monitoring and actual post-send Korean text availability were not proven. Windows cannot be tested on the current host. Sending a real Discord/KakaoTalk message automatically would be an external side effect without a user-provided safe test channel, so this run must not claim `pass` for any OS/app pair.
+- Date: 2026-06-25
+- Rationale: Discord/KakaoTalk are installed on the macOS host and Accessibility is observable as enabled. macOS Discord now has a simulated adapter→pipeline→overlay proof with provider-spy privacy tests, but Input Monitoring and actual post-send Korean text availability were not proven. Windows cannot be tested on the current host. Sending a real Discord/KakaoTalk message automatically would be an external side effect without a user-provided safe test channel, so this run must not claim `pass` for any OS/app pair.
 - Passing OS/app pair(s): none yet
 - Partial OS/app pair(s): macOS Discord, macOS KakaoTalk
 - Blocked pair(s): Windows Discord, Windows KakaoTalk on this host
-- Sensitive exclusion evidence: Rust core classifier tests pass for password/protected, payment/card, unknown metadata fail-closed, chat allow fixtures; live secure-field adapter probe remains pending
-- Scoped fallback: continue G005 only as a harness/demo integration over the stable adapter contract and mock provider. Do not claim public MVP support for actual KakaoTalk/Discord post-send behavior until a manual test channel run records at least one `pass` row.
+- Sensitive exclusion evidence: Rust core classifier tests pass for password/protected, payment/card, unknown metadata fail-closed, chat allow fixtures; simulated Discord protected-field adapter decision excludes before provider/overlay; live secure-field adapter probe remains pending
+- Scoped fallback: continue only as prototype/simulated adapter integration over the stable adapter contract and mock provider. Do not claim public MVP support for actual KakaoTalk/Discord post-send behavior until a manual test channel run records at least one `pass` row.
 
 ## 스파이크 기록 템플릿
 

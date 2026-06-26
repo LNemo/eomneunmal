@@ -1,10 +1,10 @@
 # 릴리스 준비 상태
 
-작성일: 2026-06-24
+작성일: 2026-06-25
 
 ## 결론
 
-현재 상태는 **MVP 구현 기반 + harness/demo 통합 완료**이며, 실제 카카오톡/디스코드 post-send 지원을 공개적으로 `pass`라고 주장할 수 있는 상태는 아닙니다.
+현재 상태는 **Tauri runtime + privacy core + overlay local proof + simulated macOS Discord adapter integration 완료**이며, 실제 카카오톡/디스코드 post-send 지원을 공개적으로 `pass`라고 주장할 수 있는 상태는 아닙니다.
 
 이 판단은 `docs/compatibility-matrix.md`의 formal decision `narrow`를 따릅니다.
 
@@ -18,9 +18,13 @@
 - official API key provider blueprint와 secret-store boundary
 - experimental BYO OAuth off-by-default boundary
 - Tauri 2 설정/권한 스캐폴드
+- Tauri 2 runtime entrypoint, settings bridge, redacted diagnostics command
 - 설정 UI와 오버레이 미리보기
+- non-focusable overlay window, Rust overlay controller, Tauri overlay event bridge
 - 300ms overlay shell render target 측정 로직
 - macOS/Windows platform probe contract
+- macOS Discord live-adapter contract spike with in-memory fallback and protected-field fail-closed tests
+- simulated macOS Discord adapter decision → mock/spy provider → overlay integration tests
 - macOS Discord/KakaoTalk 설치/AX 상태 inventory
 - Windows probe design rows and current-host blocker record
 - harness/demo integration: post-send candidate → classifier → mock provider → overlay result
@@ -34,6 +38,12 @@
 - 실제 secure text field에서 OS adapter fail-closed live 검증
 - official LLM provider 실제 네트워크 호출 smoke test
 - Tauri 앱 패키징/서명/배포
+
+## Overclaim hard rule
+
+- `docs/compatibility-matrix.md`에 `pass` row가 0개인 동안 public README, 릴리스 노트, 앱 UI는 실제 Discord/KakaoTalk 지원 완료를 주장하지 않습니다.
+- simulated adapter/harness 결과는 `partial` 또는 prototype evidence로만 표기합니다.
+- raw text, API key, OAuth token, private channel name은 diagnostics/evidence에 남기지 않습니다.
 
 ## 안전한 다음 수동 검증 절차
 

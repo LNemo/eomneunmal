@@ -10,6 +10,7 @@ import {
 let overlayState = createOverlayState();
 
 const $ = (id) => document.getElementById(id);
+const tauriInvoke = () => globalThis.__TAURI__?.core?.invoke ?? null;
 
 function readSettings() {
   return createSettingsState({
@@ -29,10 +30,60 @@ function readSettings() {
   });
 }
 
-function renderSettingsStatus() {
-  const result = validateSettings(readSettings());
-  $('settingsStatus').textContent = result.ok ? '설정이 MVP privacy boundary를 만족합니다.' : result.errors.join(' / ');
+function applySettingsToForm(settings) {
+  $('spellingStrength').value = settings.spellingStrength;
+  $('sarcasmStrength').value = settings.sarcasmStrength;
+  $('provider').value = settings.provider;
+  $('byoOptIn').checked = settings.experimentalByoOAuthEnabled;
+  $('discordEnabled').checked = settings.appTargeting.discord;
+  $('kakaoEnabled').checked = settings.appTargeting.kakaotalk;
+  $('failClosed').checked = settings.privacy.failClosedUnknownContexts;
+  $('redactDiagnostics').checked = settings.privacy.redactDiagnostics;
+}
+
+function renderProviderRuntimeNote(settings) {
+  $('providerRuntimeNote').textContent = settings.provider === 'mock'
+    ? '현재 local proof는 Mock provider만 실행합니다.'
+    : '이 provider 설정은 저장·검증만 됩니다. 현재 local proof는 실제 provider 호출 없이 Mock provider만 실행합니다.';
+}
+
+async function validateWithRust(settings) {
+  const invoke = tauriInvoke();
+  if (!invoke) {
+    return null;
+  }
+  return invoke('validate_settings', { settings });
+}
+
+async function saveWithRust(settings) {
+  const invoke = tauriInvoke();
+  if (!invoke) {
+    return null;
+  }
+  return invoke('save_settings', { settings });
+}
+
+async function loadSettingsFromRust() {
+  const invoke = tauriInvoke();
+  if (!invoke) {
+    return false;
+  }
+  const settings = await invoke('get_saved_settings');
+  applySettingsToForm(createSettingsState(settings));
+  return true;
+}
+
+async function renderSettingsStatus() {
+  const settings = readSettings();
+  const rustResult = await validateWithRust(settings);
+  const result = rustResult ?? validateSettings(settings);
+  const bridgeText = rustResult ? ' / Rust bridge active' : '';
+  $('settingsStatus').textContent = result.ok ? `설정이 MVP privacy boundary를 만족합니다.${bridgeText}` : result.errors.join(' / ');
   $('settingsStatus').className = result.ok ? 'ok' : 'error';
+  renderProviderRuntimeNote(settings);
+  if (result.ok) {
+    await saveWithRust(settings);
+  }
 }
 
 function renderOverlay(title, body, phase) {
@@ -41,7 +92,11 @@ function renderOverlay(title, body, phase) {
   $('overlay').className = `overlay ${phase}`;
 }
 
-function simulateSend() {
+function renderOverlayView(view) {
+  renderOverlay(view.title, view.body, view.phase);
+}
+
+function simulateBrowserPreview() {
   const detectedAt = performance.now();
   overlayState = onSendDetected(overlayState, detectedAt);
   renderOverlay('전송 감지', '없는말이 맞춤법을 씹을 준비 중...', 'loading');
@@ -62,8 +117,29 @@ function simulateSend() {
   });
 }
 
+async function simulateSend() {
+  const invoke = tauriInvoke();
+  if (!invoke) {
+    simulateBrowserPreview();
+    return;
+  }
+
+  await renderSettingsStatus();
+  try {
+    const report = await invoke('simulate_mock_post_send');
+    renderOverlayView(report.renderedLoadingView);
+    if (report.resultView) {
+      renderOverlayView(report.resultView);
+    }
+  } catch (error) {
+    renderOverlay('실행 제외', String(error), 'result');
+  }
+}
+
 for (const id of ['spellingStrength', 'sarcasmStrength', 'provider', 'discordEnabled', 'kakaoEnabled', 'failClosed', 'redactDiagnostics', 'byoOptIn']) {
-  $(id).addEventListener('change', renderSettingsStatus);
+  $(id).addEventListener('change', () => { void renderSettingsStatus(); });
 }
 $('simulateSend').addEventListener('click', simulateSend);
-renderSettingsStatus();
+loadSettingsFromRust()
+  .catch(() => false)
+  .finally(() => { void renderSettingsStatus(); });

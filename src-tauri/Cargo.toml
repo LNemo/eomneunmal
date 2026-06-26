@@ -2,6 +2,7 @@
 name = "eomneunmal"
 version = "0.1.0"
 edition = "2021"
+default-run = "eomneunmal"
 description = "Core privacy and critique pipeline for 없는말"
 license = "UNLICENSED"
 
@@ -10,3 +11,9 @@ name = "eomneunmal"
 path = "src/lib.rs"
 
 [dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tauri = { version = "2", features = [] }
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }

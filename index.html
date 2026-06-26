@@ -11,7 +11,7 @@
       <section class="hero">
         <p class="eyebrow">Korean post-send grammar roast companion</p>
         <h1>없는말</h1>
-        <p>카카오톡/디스코드 전송 직후 맞춤법 지적 캐릭터가 나타납니다.</p>
+        <p>카카오톡/디스코드 전송 직후 맞춤법 지적 캐릭터가 나타나는 경험을 검증 중인 프로토타입입니다. 현재는 simulated local proof이며 실제 채팅 앱 지원은 아직 pass 검증 전입니다.</p>
         <strong class="warning">욕설 포함 주의: 강한 비꼼 모드는 직접 모욕을 표시할 수 있습니다.</strong>
       </section>
 
@@ -38,6 +38,7 @@
             <option value="experimental-byo-oauth">실험적 BYO OAuth</option>
           </select>
         </label>
+        <p id="providerRuntimeNote" class="hint">현재 local proof는 Mock provider만 실행합니다. 공식 API 키/BYO OAuth 설정은 저장·검증 경계만 준비된 상태입니다.</p>
         <label><input id="discordEnabled" type="checkbox" checked /> Discord 감지</label>
         <label><input id="kakaoEnabled" type="checkbox" checked /> KakaoTalk 감지</label>
         <label><input id="failClosed" type="checkbox" checked /> 알 수 없는 입력은 제외</label>

@@ -6,6 +6,7 @@
 }
 
 body { margin: 0; }
+body.overlay-body { background: transparent; padding: 16px; overflow: hidden; }
 .app-shell { display: grid; gap: 24px; max-width: 1040px; margin: 0 auto; padding: 40px 24px; }
 .hero, .settings, .overlay-preview { border: 1px solid rgba(255,255,255,.12); border-radius: 24px; padding: 24px; background: rgba(255,255,255,.05); }
 .eyebrow { color: #ffca64; text-transform: uppercase; letter-spacing: .08em; font-size: 12px; }
@@ -13,11 +14,14 @@ h1 { font-size: clamp(40px, 8vw, 88px); margin: 0; }
 .warning { display: inline-block; margin-top: 16px; color: #ff8d8d; }
 .settings { display: grid; gap: 14px; }
 .settings label { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+.hint { margin: 0; color: #c7c4d8; font-size: 14px; line-height: 1.5; }
 select, button { border-radius: 999px; border: 0; padding: 10px 14px; }
 button { background: #ffca64; color: #18120a; font-weight: 700; cursor: pointer; }
 output.ok { color: #91ffa8; }
 output.error { color: #ff8d8d; }
 .overlay { margin-top: 16px; display: flex; gap: 14px; align-items: center; max-width: 420px; border-radius: 24px; padding: 18px; background: #20242f; box-shadow: 0 18px 60px rgba(0,0,0,.32); }
+.overlay-window { margin-top: 0; box-sizing: border-box; width: min(388px, calc(100vw - 32px)); }
 .overlay .character { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; background: #ffca64; color: #18120a; font-size: 32px; font-weight: 900; }
 .overlay.loading { outline: 2px solid #ffca64; }
 .overlay.result { outline: 2px solid #91ffa8; }
+.overlay.dismissed { display: none; }

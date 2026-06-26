@@ -7,7 +7,13 @@
   "scripts": {
     "dev": "node scripts/dev-placeholder.js",
     "build": "node scripts/build-placeholder.js",
-    "check": "node --check src/ui-state.js && node --check src/main.js && node --check tests/frontend/ui-state.test.js",
-    "test": "npm run check && node --test tests/frontend/*.test.js"
+    "check": "node --check src/ui-state.js && node --check src/main.js && node --check src/overlay-window.js && node --check tests/frontend/ui-state.test.js",
+    "test": "npm run check && node --test tests/frontend/*.test.js",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.11.3"
   }
 }

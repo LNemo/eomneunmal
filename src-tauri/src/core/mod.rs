@@ -4,6 +4,7 @@ pub mod candidate;
 pub mod diagnostics;
 pub mod harness;
 pub mod overlay;
+pub mod overlay_controller;
 pub mod pipeline;
 pub mod prompt;
 pub mod provider;
@@ -16,6 +17,9 @@ pub use candidate::{CandidateBuffer, CandidateSnapshot, ClearReason};
 pub use diagnostics::{DiagnosticEvent, Redacted};
 pub use harness::{run_post_send_harness, HarnessOutcome, HarnessScenario, SupportClaim};
 pub use overlay::{OverlayPhase, OverlayStateMachine, OVERLAY_RENDER_TARGET};
+pub use overlay_controller::{
+    OverlayController, OverlayPresenter, OverlayRunReport, OverlayViewModel, OVERLAY_STATE_EVENT,
+};
 pub use pipeline::{CritiquePipeline, PipelineOutcome, PostSendEvent};
 pub use prompt::PromptBuilder;
 pub use provider::{

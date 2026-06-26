@@ -1,6 +1,6 @@
 # 없는말
 
-**없는말**은 macOS와 Windows에서 카카오톡/디스코드 메시지를 보낸 직후, 캐릭터가 튀어나와 한국어 맞춤법·띄어쓰기·표기 오류를 비꼬듯 지적해 주는 데스크톱 앱입니다.
+**없는말**은 macOS와 Windows에서 카카오톡/디스코드 메시지를 보낸 직후, 캐릭터가 튀어나와 한국어 맞춤법·띄어쓰기·표기 오류를 비꼬듯 지적하는 경험을 목표로 하는 데스크톱 앱 프로토타입입니다. 현재 저장소는 simulated adapter proof 단계이며, 실제 채팅 앱 전송 직후 지원은 아직 `pass`로 검증되지 않았습니다.
 
 > ⚠️ **욕설 포함 주의**  
 > 비꼼 강도를 높이면 욕설, 직접적인 사용자 공격, 모욕적인 농담이 표시될 수 있습니다. 기본값은 약한 농담 톤이며, 강한 모드는 사용자가 직접 켰을 때만 동작해야 합니다.
@@ -26,10 +26,10 @@
 
 | 우선순위 | 범위 | 상태 |
 |---|---|---|
-| 1 | macOS + Discord 전송 직후 피드백 | 계획/스파이크 필요 |
-| 2 | macOS + KakaoTalk 전송 직후 피드백 | 계획/스파이크 필요 |
-| 3 | Windows + Discord 전송 직후 피드백 | 계획/스파이크 필요 |
-| 4 | Windows + KakaoTalk 전송 직후 피드백 | 계획/스파이크 필요 |
+| 1 | macOS + Discord 전송 직후 피드백 | `partial`: 설치/AX inventory + simulated adapter→pipeline→overlay proof, 실제 전송 pass 없음 |
+| 2 | macOS + KakaoTalk 전송 직후 피드백 | `partial`: 설치/AX inventory, 실제 전송 pass 없음 |
+| 3 | Windows + Discord 전송 직후 피드백 | `blocked`: 현재 호스트가 Windows가 아님 |
+| 4 | Windows + KakaoTalk 전송 직후 피드백 | `blocked`: 현재 호스트가 Windows가 아님 |
 
 자세한 기록은 [`docs/compatibility-matrix.md`](docs/compatibility-matrix.md)에 남깁니다.
 
@@ -65,19 +65,32 @@
 
 ## 현재 호환성 상태
 
-2026-06-24 기준 이 저장소는 실제 카카오톡/디스코드 전송 직후 지원을 `pass`로 주장하지 않습니다. 현재 결과는 macOS 앱 설치/접근성 inventory와 harness/demo 통합까지이며, 안전한 테스트 채널에서 수동 검증 후 [`docs/compatibility-matrix.md`](docs/compatibility-matrix.md)를 갱신해야 합니다.
+2026-06-25 기준 이 저장소는 실제 카카오톡/디스코드 전송 직후 지원을 `pass`로 주장하지 않습니다.
+
+- macOS Discord는 simulated adapter decision이 Rust pipeline과 overlay까지 연결되는 것을 테스트로 증명했습니다.
+- 실제 Discord/KakaoTalk 메시지 전송, Input Monitoring grant, secure-field live exclusion은 아직 수동 검증 전입니다.
+- `pass` row가 생기기 전까지 README/릴리스 노트/앱 UI에서 “실제 채팅 앱 지원 완료”라고 표현하지 않습니다.
+
+자세한 evidence는 [`docs/compatibility-matrix.md`](docs/compatibility-matrix.md)에 남깁니다.
 
 ## 개발 상태
 
-현재 저장소는 MVP 구현 전 문서/계획 기반 스캐폴드 단계입니다.
+현재 저장소는 **Tauri 2 runtime + Rust privacy core + overlay local proof + simulated macOS Discord adapter integration** 단계입니다.
 
-다음 구현 순서:
+구현된 주요 항목:
 
-1. Tauri 2 + Rust 앱 셸과 최소 설정 UI
+1. Tauri 2 앱 셸, 설정 UI, Rust settings bridge
 2. 민감 입력 제외, 후보 텍스트 생명주기, 프롬프트/제공자 추상화
-3. macOS/Windows 카카오톡·디스코드 전송 직후 감지 스파이크
-4. 오버레이 캐릭터와 300ms 이내 로컬 표시 경로
-5. 호환성 매트릭스 기반 MVP go/no-go 판단
+3. non-focusable overlay window와 300ms shell render target 테스트
+4. macOS Discord adapter contract + in-memory fallback spike
+5. simulated adapter → mock provider → overlay 통합 테스트
+
+남은 핵심 작업:
+
+1. 안전한 테스트 채널에서 실제 Discord/KakaoTalk post-send pass row 확보
+2. macOS Input Monitoring/secure-field live 검증
+3. Windows host에서 WH_KEYBOARD_LL + UI Automation 검증
+4. official LLM provider 네트워크 smoke test와 패키징/서명
 
 ## 문서
 
