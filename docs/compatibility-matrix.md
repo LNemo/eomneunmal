@@ -55,16 +55,34 @@ Current host:
 | Support claim | `SimulatedAdapterOnly`, not `pass` |
 | Test evidence | `cargo test` includes simulated Discord adapter integration and provider-spy privacy tests |
 
+## 2026-06-27 macOS KakaoTalk live pass
+
+이 항목은 사용자가 열어 둔 KakaoTalk `나와의 채팅` safe self-chat에서 실제 메시지 전송 후 확인한 live evidence입니다. 원문 메시지, 채팅방 이름, 개인 식별 정보는 기록하지 않습니다.
+
+Evidence commands/checks:
+
+```sh
+(cd src-tauri && cargo run --bin live_focus_probe)
+npm run build
+(cd src-tauri && cargo run --bin eomneunmal)
+# KakaoTalk safe self-chat에서 redacted typo fixture를 수동/자동화 보조로 1회 전송
+# System Events window inventory로 없는말 overlay window 표시 확인
+```
+
+| OS | App | OS/App version | Permissions | Input method | Send signal | Text acquisition method | Sensitive-exclusion result | Status | Evidence notes |
+|---|---|---|---|---|---|---|---|---|---|
+| macOS | KakaoTalk | 27.0 / 26.1.2 | Accessibility trusted for current process; InputMonitoring optional for key event tap | Korean IME | Enter after safe self-chat fixture plus AX chat-table mutation confirmation | direct AX focused text snapshot + actual message-field metadata + in-memory detector | protected/stale/unknown/no-send paths covered by Rust tests; live secure-field probe pending | pass | safe self-chat; message redacted; `live_focus_probe` reported KakaoTalk AXTextArea protected=false, message_input=true, chat_history_hash_present=true; `없는말 지적` overlay window appeared after send; no message mutation path |
+
 ## Formal MVP Go/No-Go 기록
 
-- Decision: `narrow`
-- Date: 2026-06-25
-- Rationale: Discord/KakaoTalk are installed on the macOS host and Accessibility is observable as enabled. macOS Discord now has a simulated adapter→pipeline→overlay proof with provider-spy privacy tests, but Input Monitoring and actual post-send Korean text availability were not proven. Windows cannot be tested on the current host. Sending a real Discord/KakaoTalk message automatically would be an external side effect without a user-provided safe test channel, so this run must not claim `pass` for any OS/app pair.
-- Passing OS/app pair(s): none yet
-- Partial OS/app pair(s): macOS Discord, macOS KakaoTalk
+- Decision: `narrow-with-kakao-pass`
+- Date: 2026-06-27
+- Rationale: Discord/KakaoTalk are installed on the macOS host. macOS KakaoTalk now has one safe self-chat live pass using direct Accessibility focused-text snapshot, real message-field metadata, Enter/key-event or AX chat-table mutation confirmation, mock provider, and overlay display. macOS Discord still has only simulated adapter→pipeline→overlay proof with provider-spy privacy tests. Windows cannot be tested on the current host.
+- Passing OS/app pair(s): macOS KakaoTalk safe self-chat
+- Partial OS/app pair(s): macOS Discord
 - Blocked pair(s): Windows Discord, Windows KakaoTalk on this host
-- Sensitive exclusion evidence: Rust core classifier tests pass for password/protected, payment/card, unknown metadata fail-closed, chat allow fixtures; simulated Discord protected-field adapter decision excludes before provider/overlay; live secure-field adapter probe remains pending
-- Scoped fallback: continue only as prototype/simulated adapter integration over the stable adapter contract and mock provider. Do not claim public MVP support for actual KakaoTalk/Discord post-send behavior until a manual test channel run records at least one `pass` row.
+- Sensitive exclusion evidence: Rust core classifier tests pass for password/protected, payment/card, unknown metadata fail-closed, chat allow fixtures; KakaoTalk live detector tests exclude protected, stale, no-send, and non-message-metadata transitions; live secure-field adapter probe remains pending
+- Scoped fallback: public claims must stay within the recorded pass row. Do not claim Discord or Windows support until each target records its own pass evidence.
 
 ## 스파이크 기록 템플릿
 

@@ -9,6 +9,7 @@ use super::probe::{PermissionState, TargetApp};
 pub enum SendSignalSource {
     EnterKey,
     SendButton,
+    ChatTranscriptChanged,
     SyntheticHarness,
 }
 
@@ -17,6 +18,7 @@ impl SendSignalSource {
         match self {
             Self::EnterKey => "enter-key",
             Self::SendButton => "send-button",
+            Self::ChatTranscriptChanged => "chat-transcript-changed",
             Self::SyntheticHarness => "synthetic-harness",
         }
     }

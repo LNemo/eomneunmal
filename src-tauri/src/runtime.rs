@@ -1,4 +1,5 @@
 use std::sync::Mutex;
+use std::thread;
 use std::time::{Duration, Instant};
 
 use serde::{Deserialize, Serialize};
@@ -18,9 +19,14 @@ use crate::platform::integration::{
     run_adapter_decision_with_overlay, LivePipelineReport, LivePipelineTiming,
 };
 use crate::platform::macos::{
-    MacDiscordAdapter, MacFocusedElementContext, MacOsPermissionSnapshot, DISCORD_BUNDLE_ID,
+    accessibility_trusted_for_current_process, capture_focused_text_snapshot,
+    capture_focused_text_snapshot_with_chat_history, request_accessibility_trust_prompt,
+    start_enter_key_event_monitor, take_enter_key_event_signal, MacDiscordAdapter,
+    MacEnterKeyStateTracker, MacFocusedElementContext, MacKakaoTalkAdapter,
+    MacLivePostSendCandidate, MacOsPermissionSnapshot, MacPostSendTransitionDetector,
+    DISCORD_BUNDLE_ID, KAKAOTALK_BUNDLE_ID,
 };
-use crate::platform::probe::PermissionState;
+use crate::platform::probe::{PermissionState, TargetApp};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -184,11 +190,16 @@ pub fn save_settings(
 #[tauri::command]
 pub fn redacted_diagnostics() -> RedactedDiagnosticsDto {
     let event = DiagnosticEvent::new("runtime-ready", "not-requested");
+    let permission_state = if accessibility_trusted_for_current_process() {
+        PermissionState::Ready.label().to_owned()
+    } else {
+        PermissionState::SetupRequired.label().to_owned()
+    };
     RedactedDiagnosticsDto {
         app_id: event.app_id,
         window_title_hash: event.window_title_hash,
         adapter_decision: event.adapter_decision,
-        permission_state: event.permission_state,
+        permission_state,
         provider_status: event.provider_status,
         raw_text_exposed: false,
         secrets_exposed: false,
@@ -344,6 +355,10 @@ impl OverlayPresenter for TauriOverlayPresenter<'_> {
 pub fn run() {
     tauri::Builder::default()
         .manage(RuntimeState::default())
+        .setup(|app| {
+            spawn_live_watcher(app.handle().clone());
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             get_default_settings,
             get_saved_settings,
@@ -355,6 +370,155 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running 없는말 Tauri application");
+}
+
+fn spawn_live_watcher(app: tauri::AppHandle) {
+    #[cfg(target_os = "macos")]
+    {
+        let _ = thread::Builder::new()
+            .name("eomneunmal-macos-live-watcher".to_owned())
+            .spawn(move || run_macos_live_watcher(app));
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = app;
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn run_macos_live_watcher(app: tauri::AppHandle) {
+    let _ = request_accessibility_trust_prompt();
+    let _ = start_enter_key_event_monitor();
+    let mut detector = MacPostSendTransitionDetector::default();
+    let mut enter_key_tracker = MacEnterKeyStateTracker::default();
+    loop {
+        thread::sleep(Duration::from_millis(60));
+        let now = Instant::now();
+        let send_signal = take_enter_key_event_signal().or_else(|| enter_key_tracker.observe(now));
+        let snapshot = capture_focused_text_snapshot(now);
+        let should_include_history = snapshot
+            .as_ref()
+            .map(|snapshot| {
+                snapshot.looks_like_editable_chat_input()
+                    && (!snapshot.is_empty() || detector.has_pending_candidate())
+            })
+            .unwrap_or(false);
+        let snapshot = if should_include_history {
+            capture_focused_text_snapshot_with_chat_history(now).or(snapshot)
+        } else {
+            snapshot
+        };
+        let Some(candidate) = detector.observe(snapshot, send_signal) else {
+            continue;
+        };
+        let _ = handle_live_post_send_candidate(&app, candidate);
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn handle_live_post_send_candidate(
+    app: &tauri::AppHandle,
+    candidate: MacLivePostSendCandidate,
+) -> Result<OverlayRunReport, String> {
+    let state = app.state::<RuntimeState>();
+    let settings = state
+        .settings
+        .lock()
+        .map_err(|_| "runtime settings mutex poisoned".to_owned())?
+        .clone();
+    let app_settings = AppSettings::try_from(settings)
+        .map_err(|errors| errors.join(" / "))
+        .and_then(|app_settings| {
+            app_settings
+                .validate()
+                .map(|()| app_settings)
+                .map_err(|errors| errors.join(" / "))
+        })?;
+
+    if app_settings.provider != ProviderKind::Mock {
+        return Err(
+            "live local proof only executes Mock provider; official/BYO providers are settings-only"
+                .to_owned(),
+        );
+    }
+
+    let enabled = match candidate.target {
+        TargetApp::Discord => app_settings.app_targeting.discord_enabled,
+        TargetApp::KakaoTalk => app_settings.app_targeting.kakaotalk_enabled,
+    };
+    if !enabled {
+        return Err(format!("{} target is disabled", candidate.target.label()));
+    }
+
+    let permissions = MacOsPermissionSnapshot {
+        accessibility: PermissionState::Ready,
+        input_monitoring: PermissionState::Unknown,
+    };
+    let adapter_decision = match candidate.target {
+        TargetApp::Discord => {
+            let mut adapter = MacDiscordAdapter::with_permissions(permissions);
+            adapter.observe_candidate(
+                candidate.text,
+                DISCORD_BUNDLE_ID.to_owned(),
+                candidate.detected_at,
+            );
+            adapter.prepare_post_send(
+                candidate.context.into(),
+                candidate.source,
+                candidate.detected_at,
+            )
+        }
+        TargetApp::KakaoTalk => {
+            let mut adapter = MacKakaoTalkAdapter::with_permissions(permissions);
+            adapter.observe_candidate(
+                candidate.text,
+                KAKAOTALK_BUNDLE_ID.to_owned(),
+                candidate.detected_at,
+            );
+            adapter.prepare_post_send(
+                candidate.context.into(),
+                candidate.source,
+                candidate.detected_at,
+            )
+        }
+    };
+
+    let mut presenter = TauriOverlayPresenter { app };
+    let mut overlay = state
+        .overlay
+        .lock()
+        .map_err(|_| "runtime overlay mutex poisoned".to_owned())?;
+    let mut pipeline = state
+        .mock_pipeline
+        .lock()
+        .map_err(|_| "runtime mock pipeline mutex poisoned".to_owned())?;
+    let report = run_adapter_decision_with_overlay(
+        &mut pipeline,
+        &mut overlay,
+        &mut presenter,
+        adapter_decision,
+        app_settings.spelling_strength,
+        app_settings.sarcasm_strength,
+        LivePipelineTiming {
+            shell_rendered_at: Instant::now(),
+            result_rendered_at: Instant::now(),
+        },
+    )?;
+
+    match report {
+        LivePipelineReport::FeedbackShown { overlay, .. } => Ok(*overlay),
+        LivePipelineReport::Excluded { reasons, .. } => Err(format!(
+            "live adapter excluded input: {}",
+            reasons.join(" / ")
+        )),
+        LivePipelineReport::Unavailable { reason, .. } => {
+            Err(format!("live adapter unavailable: {reason}"))
+        }
+        LivePipelineReport::ProviderFailed { .. } => {
+            Err("mock provider failed unexpectedly".to_owned())
+        }
+    }
 }
 
 fn validate_runtime_settings(settings: &RuntimeSettingsDto) -> ValidationReport {
